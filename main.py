@@ -1,16 +1,55 @@
-# This is a sample Python script.
+import threading
 
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
-
-
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
+import bluetooth
+import random
+import json
+import time
 
 
-# Press the green button in the gutter to run the script.
-if __name__ == '__main__':
-    print_hi('PyCharm')
+def get_random_data():
+    return {
+        "temperature": random.randint(-20, 20),
+        "humidity": random.randint(0, 600),
+        "light": random.random(),
+    }
 
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+
+server_sock = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
+server_sock.bind(("", bluetooth.PORT_ANY))
+server_sock.listen(1)
+
+port = server_sock.getsockname()[1]
+
+uuid = "94f39d29-7d6d-437d-973b-fba39e49d4ee"
+
+bluetooth.advertise_service(server_sock, "SampleServer", service_id=uuid,
+                            service_classes=[uuid, bluetooth.SERIAL_PORT_CLASS],
+                            profiles=[bluetooth.SERIAL_PORT_PROFILE],
+                            # protocols=[bluetooth.OBEX_UUID]
+                            )
+
+print("Waiting for connection on RFCOMM channel", port)
+
+client_sock, client_info = server_sock.accept()
+print("Accepted connection from", client_info)
+
+measures = get_random_data()
+client_sock.send(str(measures))
+
+try:
+    while True:
+        data = client_sock.recv(1024).decode("utf-8")
+        measures = get_random_data()
+        client_sock.send(str(measures))
+        print("Data sent", measures)
+        if not data:
+            break
+        print("Received", data)
+except OSError:
+    pass
+
+print("Disconnected.")
+
+client_sock.close()
+server_sock.close()
+print("All done.")
