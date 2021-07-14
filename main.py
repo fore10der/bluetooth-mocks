@@ -38,13 +38,10 @@ client_sock.send(str(measures))
 
 try:
     while True:
-        data = client_sock.recv(1024).decode("utf-8")
+        time.sleep(5)
         measures = get_random_data()
         client_sock.send(str(measures))
         print("Data sent", measures)
-        if not data:
-            break
-        print("Received", data)
 except OSError:
     pass
 
